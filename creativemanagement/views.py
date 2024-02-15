@@ -35,6 +35,7 @@ def upload_to_s3(local_file_path, bucket_name, s3_key):
 #     return render(request, 'creativemanagement/upload1.html')
 def upload(myfile,id):
     fs = FileSystemStorage()
+    print("fs",fs)
     filename = fs.save(myfile.name, myfile)
     url = fs.url(myfile)
     print(url)
