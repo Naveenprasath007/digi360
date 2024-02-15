@@ -103,8 +103,8 @@ def ajax(request):
         #     upload = UploadPrivate(file=myfile)
         # upload.save()
         # myfile_url = upload.file.url
-        startTreading = threading.Thread(target=upload,args=(myfile,id),daemon=True)
-        startTreading.start()
+        # startTreading = threading.Thread(target=upload,args=(myfile,id),daemon=True)
+        # startTreading.start()
         return JsonResponse({'data': 'success'})
     else:
         ajax_list = []
