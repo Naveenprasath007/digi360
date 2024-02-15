@@ -95,6 +95,10 @@ def ajax(request):
         platform=platform,file_object_name="--",status="Uploading")        
         creative.save()
 
+        fs = FileSystemStorage()
+        print("fs",fs)
+        filename = fs.save(myfile.name, myfile)
+
         # if settings.USE_S3:
         #     upload = UploadPrivate(file=myfile)
         # upload.save()
