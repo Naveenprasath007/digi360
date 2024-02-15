@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.http import HttpResponse
 import threading
 from django.core.files.storage import FileSystemStorage
 from .models import Creative
@@ -9,6 +10,51 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
+
+
+
+# views.py
+from django.http import HttpResponse
+from django.shortcuts import render
+import threading
+import os
+import shutil
+
+def handle_uploaded_file(f):
+    # Save the uploaded file to a temporary location
+    with open('temp.mp4', 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+
+def save_video(video_file):
+    try:
+        # Move the file from temporary location to final destination
+        shutil.move('temp.mp4', 'example.mp4')
+        print("Video saved successfully.")
+    except Exception as e:
+        print(f"Error saving video: {e}")
+
+def save_video_async(video_file):
+    # Call handle_uploaded_file to save the file to a temporary location
+    handle_uploaded_file(video_file)
+    
+    # Call save_video asynchronously
+    save_thread = threading.Thread(target=save_video, args=(video_file,))
+    save_thread.start()
+
+def save_video_view(request):
+    if request.method == 'POST' and request.FILES.get('video_file'):
+        video_file = request.FILES['video_file']
+        
+        # Call save_video_async to save the file asynchronously
+        save_video_async(video_file)
+        
+        return HttpResponse("Video saving request received. It will be processed asynchronously.")
+    else:
+        return render(request, 'creativemanagement/save_video.html')
+
+
+
 
 def upload_to_s3(local_file_path, bucket_name, s3_key):
     start = time.time()
@@ -95,16 +141,16 @@ def ajax(request):
         platform=platform,file_object_name="--",status="Uploading")        
         creative.save()
 
-        fs = FileSystemStorage()
-        print("fs",fs)
-        filename = fs.save(myfile.name, myfile)
+        # fs = FileSystemStorage()
+        # print("fs",fs)
+        # filename = fs.save(myfile.name, myfile)
 
         # if settings.USE_S3:
         #     upload = UploadPrivate(file=myfile)
         # upload.save()
         # myfile_url = upload.file.url
-        # startTreading = threading.Thread(target=upload,args=(myfile,id),daemon=True)
-        # startTreading.start()
+        startTreading = threading.Thread(target=upload,args=(myfile,id),daemon=True)
+        startTreading.start()
         return JsonResponse({'data': 'success'})
     else:
         ajax_list = []
