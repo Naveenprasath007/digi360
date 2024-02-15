@@ -1,0 +1,6 @@
+docker build -t django-digi360-app .
+
+docker run --name digi360 -p 8888:8888 -d -v /home/ubuntu/digi360:/app django-digi360-app 
+
+
+docker exec -it container_id python manage.py migrate
