@@ -10,6 +10,9 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
+# from aiohttp import web
+# import asyncio
+
 
 
 
@@ -19,39 +22,93 @@ from django.shortcuts import render
 import threading
 import os
 import shutil
+import json
+# views.py
+from django.conf import settings
+# from .tasks import upload_to_s3_and_save_chunk,upload_to_s3_and_save,process_uploaded_file
+from django.core.serializers.json import DjangoJSONEncoder
+import base64
 
-def handle_uploaded_file(f):
-    # Save the uploaded file to a temporary location
-    with open('temp.mp4', 'wb+') as destination:
-        for chunk in f.chunks():
-            destination.write(chunk)
 
-def save_video(video_file):
-    try:
-        # Move the file from temporary location to final destination
-        shutil.move('temp.mp4', 'example.mp4')
-        print("Video saved successfully.")
-    except Exception as e:
-        print(f"Error saving video: {e}")
+def uploadmulti(file_data,filename):
+    file_path = os.path.join(settings.MEDIA_ROOT, filename)
+    with open(file_path, 'wb') as f:
+        f.write(file_data)
 
-def save_video_async(video_file):
-    # Call handle_uploaded_file to save the file to a temporary location
-    handle_uploaded_file(video_file)
-    
-    # Call save_video asynchronously
-    save_thread = threading.Thread(target=save_video, args=(video_file,))
-    save_thread.start()
 
-def save_video_view(request):
-    if request.method == 'POST' and request.FILES.get('video_file'):
-        video_file = request.FILES['video_file']
+
+
+
+
+
+def serialize_video_file(uploaded_file,temp_file):
+    # Extract relevant information
+    byte=base64.b64encode(uploaded_file)
+    file_info = {
+        'name': temp_file.name,
+        'size': temp_file.size,
+        'content_base64': byte.decode('utf-8'),
+        'content_type': temp_file.content_type,
+
+    }
+
+    # Serialize the information to JSON
+    json_data = json.dumps(file_info, cls=DjangoJSONEncoder)
+    uploadfil.delay(data=json_data)
+    return json_data
+
+# Usage
+
+
+def upload_file(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        # file_content = request.FILES['file']
+        uploaded_file = request.FILES['file'].read()
+        uploaded_name= request.FILES['file'].name
+        # serialize_video_file.delay(uploaded_file,file_content)
+        # serialize_video_file(uploaded_file,file_content)
+        uploaded_name= request.FILES['file'].name
+        startTreading = threading.Thread(target=uploadmulti,args=(uploaded_file,uploaded_name),daemon=True)
+        startTreading.start()
+
+        # process_uploaded_file.delay(uploaded_file, uploaded_name)
         
-        # Call save_video_async to save the file asynchronously
-        save_video_async(video_file)
+
+
+        # byte=base64.b64encode(uploaded_file)
+        # file_info = {
+        #     'name': file_content.name,
+        #     'size': file_content.size,
+        #     'content_base64': byte.decode('utf-8'),
+        #     'content_type': file_content.content_type,
+
+        # }
+
+        # # Serialize the information to JSON
+        # json_data = json.dumps(file_info, cls=DjangoJSONEncoder)
+        # print(json_data)
+        # Trigger the Celery task asynchronously
+
+
+        # upload_to_s3_and_save.delay(uploaded_file,uploaded_file.name)
+
+        # uploaded_file = request.FILES['file']
+        # # Get the total number of chunks
+        # total_chunks = int(request.POST.get('total_chunks', 1))
+        # # Read and process each chunk
+        # for i, chunk in enumerate(uploaded_file.chunks(), start=1):
+        #     upload_to_s3_and_save_chunk.delay(chunk, i, total_chunks, uploaded_file.name, 'your-bucket-name', 'path/to/your/file')
+
+
         
-        return HttpResponse("Video saving request received. It will be processed asynchronously.")
+        return JsonResponse({'message': 'File upload initiated successfully'}, status=200)
     else:
-        return render(request, 'creativemanagement/save_video.html')
+        return render(request, 'creativemanagement/upload_file.html')
+
+
+
+
+
 
 
 
