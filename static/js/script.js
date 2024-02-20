@@ -296,7 +296,7 @@ function saveUploadInfo(item, fileLocations) {
         .done(function (datas) {
             $("#dataTable > tbody").prepend("<tr id='table-" + datas.id + "'>\n\
             <td></td><td><input type='checkbox'></td><td class='ellipsis'><span>" + datas.name + "</span></td><td>" + datas.creator + "</td><td>" + datas.creative_type + "</td>\n\
-        <td class='ellipsis'><span>" + datas.platform + "</span></td><td class='ellipsis'><span><a style='text-decoration:none' href='/cm/fileview/"+datas.id+"'>View Files</a></span></td>\n\
+        <td class='ellipsis'><span>" + datas.platform + "</span></td><td class='ellipsis'><span><a style='text-decoration:none' href='/cm/fileview/"+ datas.id +"' target='_blank'>View Files</a></span></td>\n\
         <td>" + datas.created_at + "</td><td><a class='btn btn-sm btn-warning'><span class='fa fa-edit'></span>Edit</a>\n\
         <a class='btn btn-sm btn-danger delete' data-id='" + datas.id + "'><span class='fa fa-trash'></span> Delete</a> </td></tr>");
         numberRows();
