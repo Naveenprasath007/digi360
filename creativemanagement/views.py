@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.http import HttpResponse
 import threading
 from django.core.files.storage import FileSystemStorage
-from .models import Creative
+from .models import Creative,UploadInfo
 import os
 import boto3
 import time
@@ -12,9 +12,12 @@ from dotenv import load_dotenv
 load_dotenv()
 # from aiohttp import web
 # import asyncio
+import datetime
 
 
 
+
+from django.utils import timezone
 
 # views.py
 from django.http import HttpResponse
@@ -28,12 +31,137 @@ from django.conf import settings
 # from .tasks import upload_to_s3_and_save_chunk,upload_to_s3_and_save,process_uploaded_file
 from django.core.serializers.json import DjangoJSONEncoder
 import base64
+aws_access_key_id=os.getenv('aws_access_key_id'),
+aws_secret_access_key=os.getenv('aws_secret_access_key')
+Bucketname=os.getenv('Bucketname')
 
 
-def uploadmulti(file_data,filename):
-    file_path = os.path.join(settings.MEDIA_ROOT, filename)
-    with open(file_path, 'wb') as f:
-        f.write(file_data)
+
+def save_upload_info(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        creative = Creative(
+            id=data['id'],
+            name=data['creativeName'],
+            creator=data['creator'],
+            lob=data['lob'],
+            creative_type=data['type'],
+            platform=data['platform'],
+            file_object_name=','.join([file['fileLocation'] for file in data['files']]),
+            created_at=datetime.datetime.now(tz=timezone.utc),
+            updated_at=datetime.datetime.now(tz=timezone.utc),
+
+        )
+        creative.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'})
+
+def fileview(request,id):
+    if request.method == 'POST':
+           return HttpResponse("Success!") 
+    else:
+        filtered_column_values = Creative.objects.filter(id=id).values_list('file_object_name', flat=True)
+        url=filtered_column_values[0]
+        url_list = url
+        url_list = url_list.split(",")
+        print(url_list)
+        creative_type = Creative.objects.filter(id=id).values_list('creative_type', flat=True)
+        type=creative_type[0]
+        context = {
+        'url_list': url_list,'type':type}
+        # return HttpResponse("Success!") 
+        return render(request, 'creativemanagement/fileView.html',context)
+
+def getajax(request):
+    if request.method == 'GET':
+        if Creative(request):
+            data = Creative.objects.order_by('-created_at').first()
+            created = data.created_at.strftime('%m-%d-%Y %H:%M:%S')
+            datas = {"id":data.id,"name": data.name, "creator": data.creator, "creative_type":data.creative_type,"file_object_name":data.file_object_name,
+                     "platform": data.platform, "created_at": created}
+
+            return JsonResponse(datas)
+    else:
+        return JsonResponse({'data': 'failure'})
+    
+
+def save_upload_info(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        creative = Creative(
+            id=data['id'],
+            name=data['creativeName'],
+            creator=data['creator'],
+            lob=data['lob'],
+            creative_type=data['type'],
+            platform=data['platform'],
+            status="PENDING",
+            file_object_name=','.join([file['fileLocation'] for file in data['files']]),
+            created_at=datetime.datetime.now(tz=timezone.utc),
+            updated_at=datetime.datetime.now(tz=timezone.utc),
+
+        )
+        creative.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'})
+
+def index(request):
+    if request.method == 'POST':
+            checkedbox=request.POST.getlist('checkbox')
+
+            id_list = checkedbox  # List of IDs to update
+            value = "WAIT FOR APPROVAL"
+
+            for id in id_list:
+                try:
+                    obj = Creative.objects.get(id=id)
+                    obj.status = value
+                    # Update other attributes as needed
+                    obj.save()
+                except Creative.DoesNotExist:
+                    # Handle the case when the object does not exist, e.g., log a message or create a new object
+                    pass
+            
+            # creative_list = Creative.objects.order_by('-created_at')
+            creative_list = Creative.objects.filter(status="PENDING").order_by('-created_at')
+            context = {'creative_list': creative_list}
+            return render(request, 'creativemanagement/index.html',context)
+
+    # creative_list = Creative.objects.order_by('-created_at')
+    creative_list = Creative.objects.filter(status="PENDING").order_by('-created_at')
+    context = {'creative_list': creative_list}
+    return render(request, 'creativemanagement/index.html',context)
+
+
+# def save_upload_info(request):
+#     if request.method == 'POST':
+#         id=request.POST.get('id')
+#         creativeName=request.POST.get('creativeName')
+#         creator=request.POST.get('creator')
+#         lob=request.POST.get('lob')
+#         creativeType=request.POST.get('format')
+#         platform=request.POST.get('platform')
+#         obj = request.POST.getlist('files')
+#         print(platform)
+
+#         creative = Creative(id=id,name=creativeName,
+#         creator=creator,lob=lob,creative_type=creativeType,
+#         platform=platform,file_object_name=obj,status="Uploading")        
+#         creative.save()
+#         return JsonResponse({'status': 'success'})
+#     return JsonResponse({'status': 'error'})
+
+
+
+
+
+def uploadmulti(uploaded_file,filename):
+    time.sleep(10)
+    print('hi')
+    # file_data=uploaded_file.read()
+    # file_path = os.path.join(settings.MEDIA_ROOT, filename)
+    # with open(file_path, 'wb') as f:
+    #     f.write(file_data)
 
 
 
@@ -62,13 +190,12 @@ def serialize_video_file(uploaded_file,temp_file):
 
 def upload_file(request):
     if request.method == 'POST' and request.FILES.get('file'):
-        # file_content = request.FILES['file']
-        uploaded_file = request.FILES['file'].read()
+        file_content = request.FILES['file']
+        # uploaded_file = request.FILES['file'].read()
         uploaded_name= request.FILES['file'].name
         # serialize_video_file.delay(uploaded_file,file_content)
         # serialize_video_file(uploaded_file,file_content)
-        uploaded_name= request.FILES['file'].name
-        startTreading = threading.Thread(target=uploadmulti,args=(uploaded_file,uploaded_name),daemon=True)
+        startTreading = threading.Thread(target=uploadmulti,args=(file_content,uploaded_name),daemon=True)
         startTreading.start()
 
         # process_uploaded_file.delay(uploaded_file, uploaded_name)
@@ -167,19 +294,7 @@ def upload(myfile,id):
     # print("filesaved")
 
 
-def getajax(request):
-    if request.method == 'GET':
-        if Creative(request):
-            # data = Creative.objects.order_by('-created_at').first()
-            data = Creative.objects.all()
-            print(data)
-            # created = data.created_at.strftime('%m-%d-%Y %H:%M:%S')
-            datas = {"id": "1", "text": "data.text", "search": "data.search", "email": "naaa",
-                     "telephone": "data.telephone", "created_at": "created"}
 
-            return JsonResponse(datas)
-    else:
-        return JsonResponse({'data': 'failure'})
 
 
 def ajax(request):
@@ -190,6 +305,7 @@ def ajax(request):
         creativeType=request.POST.get('creativeType')
         platform=request.POST.get('platform')
         myfile = request.FILES['file']
+        myfile_name = request.FILES['file'].name
         print(platform)
 
         id="1"
@@ -206,7 +322,7 @@ def ajax(request):
         #     upload = UploadPrivate(file=myfile)
         # upload.save()
         # myfile_url = upload.file.url
-        startTreading = threading.Thread(target=upload,args=(myfile,id),daemon=True)
+        startTreading = threading.Thread(target=uploadmulti,args=(myfile,myfile_name),daemon=True)
         startTreading.start()
         return JsonResponse({'data': 'success'})
     else:
@@ -214,3 +330,43 @@ def ajax(request):
         context = {'ajax_list': ajax_list}
     return render(request, 'creativemanagement/upload.html', {'ajax_list': ajax_list})
     # return render(request, 'tc_DigitalMarketing/test_upload.html')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from django.core.files.storage import default_storage
+
+def save_video_in_thread(file_data, file_name):
+    file_path = os.path.join(settings.MEDIA_ROOT, file_name)
+
+    # Open the file and save the data in chunks
+    with default_storage.open(file_path, 'wb') as destination:
+        for chunk in file_data.chunks():
+            destination.write(chunk)
+
+
+# Assuming you have a view where you receive the file data
+def my_video_upload_view(request):
+    if request.method == 'POST' and request.FILES.get('video'):
+        file_data = request.FILES['video']
+        file_name = file_data.name
+
+        # Create and start a new thread to save the file
+        thread = threading.Thread(target=save_video_in_thread, args=(file_data, file_name))
+        thread.start()
+
+        return HttpResponse('Video is being saved in a separate thread.')
+    return render(request, 'creativemanagement/upfile.html')

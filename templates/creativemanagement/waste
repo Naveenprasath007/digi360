@@ -1,0 +1,34 @@
+    <!-- <div class="p-2">
+      <table class="table table-bordered" id="myTable" width="100%" cellspacing="0">
+        <thead>
+        <tr>
+            <th>Select</th>
+            <th>Creative Name</th>
+            <th>Creator</th>
+            <th>Creative Type</th>
+            <th>Platform</th>
+            <th>Files</th>
+            <th>Created At</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for creative in creative_list %}
+            <tr id="table-{{ creative.id }}">
+                <td><input type="checkbox"></td>
+                <td>{{ creative.name }}</td>
+                <td>{{ creative.creator }}</td>
+                <td>{{ creative.creative_type }}</td>
+                <td>{{ creative.platform }}</td>
+                <td class="ellipsis"><span>{{ creative.file_object_name }}</span></td>
+                <td>{{ creative.created_at  |date:"d-m-Y H:i:s" }}</td>
+                <td><a class="btn btn-sm btn-warning"><span class="fa fa-edit"></span> Edit</a>
+                    <a class="btn btn-sm btn-danger delete" data-id="{{ creative.id }}">
+                        <span class="fa fa-trash"></span> Delete
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div> -->

@@ -1,0 +1,188 @@
+{% load env_extras %}
+<!DOCTYPE html>
+<html>
+{%load static%}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Page</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="{% static 'css/styles.css' %}" rel="stylesheet"/>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div id="mySidenav" class="sidenav" style="margin-bottom: 8%;">
+      <button type="button" id="button" class="btn btn" data-bs-toggle="modal" data-bs-target="#exampleModal">
+        Add Creatives +
+      </button>
+    </div>
+
+
+    <div class="line mt-5"></div>
+    <form id="myForm" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="container my-5">
+      <div class="table-container">
+          <table class="table table-responsive table-hover" id="dataTable">
+              <thead>
+                  <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Select</th>
+                      <th scope="col">Creative Name</th>
+                      <th scope="col">Creator</th>
+                      <th scope="col">File Type</th>
+                      <th scope="col">Platform</th>
+                      <th scope="col">Files</th>
+                      <th scope="col">Created At</th>
+                      <th scope="col">Action</th>
+
+                  </tr>
+              </thead>
+              <tbody>
+                {% for creative in creative_list %}
+
+                  <tr id="table-{{ creative.id }}">
+                      <td></td>
+                      <td><input type="checkbox" name="checkbox" value="{{ creative.id }}"></td>
+                      <td class="ellipsis"width="150px"><span>{{ creative.name }}</span></td>
+                      <td>{{ creative.creator }}</td>
+                      <td>{{ creative.creative_type }}</td>
+                      <td class="ellipsis" width="150px"><span>{{ creative.platform }}</span></td>
+                      <td class="ellipsis" width="150px"><span><a style="text-decoration:none" href="/cm/fileview/{{ creative.id }}" target="_blank">View Files</a></span></td>
+                      <td>{{ creative.created_at  |date:"d-m-Y H:i:s" }}</td>
+                      <td><a class="btn btn-sm btn-warning"><span class="fa fa-edit"></span> Edit</a>
+                          <a class="btn btn-sm btn-danger delete" data-id="{{ creative.id }}">
+                              <span class="fa fa-trash"></span> Delete
+                          </a>
+                      </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+          </table>
+      </div>
+      <div id="alertMessage" style="color: red; display: none;">Please select at least one checkbox.</div>
+      <div class="submit-btn-container">
+          <button class="btn btn-primary">Submit for Approval</button>
+      </div>
+  </div>
+</form>
+
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Creative Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3 needs-validation">
+
+              <div class="col-md-6">
+                <label for="validationCustom01" class="form-label"></label>
+                <input type="text" class="form-control" id="creativeNameInput" placeholder="Creative Name" required>
+                <div id="creativeNameValidationMessage" style="color: red;"></div>
+              </div>
+              <div class="col-md-6">
+                <label for="creatorInput" class="form-label"></label>
+                <input type="text" class="form-control" id="creatorInput" placeholder="Creator" required>
+                <div id="creatorValidationMessage" style="color: red;"></div>
+              </div>
+              <div class="col-md-6">
+                <label for="lobInput" class="form-label"></label>
+                <select class="form-select" id="lobInput" required>
+                  <option selected disabled value="">--Select LOB--</option>
+                  <option value="ACA">ACA</option>
+                  <option value="MEDICARE">MEDICARE</option>
+                  <option value="MEDICAID">MEDICAID</option>
+                </select>
+                <div id="lobValidationMessage" style="color: red;"></div>
+              </div>
+              <div class="col-md-6">
+                <label for="typeInput" class="form-label"></label>
+                <select class="form-select" id="typeInput" required>
+                  <option selected disabled value="">--Select File Type--</option>
+                  <option value="VIDEO">VIDEO</option>
+                  <option value="IMAGE">IMAGE</option>
+                  <option value="GIF">GIF</option>
+                  <option value="PDF">PDF</option>
+                </select>
+                <div id="typeValidationMessage" style="color: red;"></div>
+              </div>
+
+
+              <div class="col-md-12">
+                <label for="platformInput" class="form-label"></label>
+                <div class="multiselect">
+                  <div class="selectBox" onclick="showCheckboxes()">
+                    <input class="form-select" type="text" id="platformInput" placeholder="Platform"
+                      onkeyup="filterCheckboxes()">
+                    <div class="overSelect"></div>
+                  </div>
+                  <div id="checkboxes">
+                    <button class="form-select" id="selectAll" onclick="selectAllCheckboxes()">Select All</button>
+                    <label for="option1">
+                      <input type="checkbox" id="option1" value="FACEBOOK"
+                        onclick="updateInputField()" />FACEBOOK</label>
+                    <label for="option2">
+                      <input type="checkbox" id="option2" value="YOUTUBE" onclick="updateInputField()" />YOUTUBE</label>
+                    <label for="option3">
+                      <input type="checkbox" id="option3" value="TIKTOK" onclick="updateInputField()" />TIKTOK</label>
+                    <label for="option4">
+                      <input type="checkbox" id="option4" value="GDN" onclick="updateInputField()" />GDN</label>
+                    <label for="option5">
+                      <input type="checkbox" id="option5" value="NATIVE" onclick="updateInputField()" />NATIVE</label>
+                  </div>
+                </div>
+                <div id="platformValidationMessage" style="color: red;"></div>
+              </div>
+
+              <div class="col-md-12">
+                <label for="fileInput" class="form-label"></label>
+                <div id="dropArea" class="drop-area">
+                  <p>Drag and drop files here or click to select files</p>
+                  <div id="fileValidationMessage" style="color: red;"></div>
+                  <input type="file" id="fileInput" multiple hidden>
+                </div>
+                <ul id="fileList"></ul>
+              </div>
+
+
+
+
+              <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+              <div class="col-12" id="progressContainer"></div>
+              <div class="col-12">
+                <button class="btn btn-primary w-100 text-center" id="uploadButton" type="submit">ADD</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.766.0.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"></script>
+      <script>// Configure the AWS SDK with IAM user credentials
+        AWS.config.update({
+          region: 'us-east-1',
+          credentials: new AWS.Credentials("{{'aws_access_key_id' | get_env_var}}", "{{'aws_secret_access_key' | get_env_var}}")
+          });
+        
+        var s3 = new AWS.S3({
+          apiVersion: '2006-03-01',
+          params: { Bucket: "{{'Bucketname' | get_env_var}}" }
+        });
+      </script>
+      <script src="{% static 'js/script.js' %}"></script> 
+</body>
+</html>

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'creativemanagement',
+    'django_celery_results'
 ]
 
 MIDDLEWARE = [
@@ -67,6 +68,10 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+                    'libraries':{
+            'my_templatetag': 'creativemanagement.templatetags.env_extras',
+            
+            }
         },
     },
 ]
@@ -133,4 +138,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR1, 'media') # media directory in the root dire
 MEDIA_ROOT=os.path.join(BASE_DIR1,"media/")
 MEDIA_URL = '/media/'
 
-SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+CELERY_BROKER_URL="redis://127.0.0.1:6379"
+# CELERY_ACCEPT_CONTENT =['application/json']
+# CELERY_RESULT_SERIALIZER= 'json'
+# CELERY_TASK_SERIALIZER ='json'
+CELERY_TIMEZONE = 'Asia/Kolkata'
+
+CELERY_RESULT_BACKEND ='django-db'
+
+
